@@ -7,18 +7,25 @@ const PORT = process.env.PORT || 3000;
 
 (async () => {
   try {
-    await db.init({
-      force: process.env.DB_SYNC_FORCE === 'true',
-      alter: process.env.DB_SYNC_ALTER === 'true',
-    });
+    await db.init();
 
     const server = app.listen(PORT, () => {
       console.log(`Server listening on http://127.0.0.1:${PORT}`);
     });
 
+    server.on('error', async (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Stop the other server or start this app with a different PORT.`);
+      } else {
+        console.error('server error', err);
+      }
+      await db.prisma.$disconnect();
+      process.exit(1);
+    });
+
     const shutdown = async () => {
       server.close(async () => {
-        await db.sequelize.close();
+        await db.prisma.$disconnect();
         process.exit(0);
       });
     };

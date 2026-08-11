@@ -1,29 +1,29 @@
 const express = require('express');
 
-const { models } = require('../database');
+const { prisma } = require('../database');
 const asyncHandler = require('../middleware/asyncHandler');
 const { authMiddleware } = require('../middleware/auth');
+const { branchWhere } = require('./shared');
 
 const router = express.Router();
-const { Branch, Course, Student, BranchStatistic, SystemStatistic } = models;
 
 router.use(authMiddleware);
 
 router.get('/summary', asyncHandler(async (req, res) => {
-  const branchWhere = req.user.role === 'SUPER_ADMIN' ? {} : { id: req.user.branch_id };
-  const childBranchWhere = req.user.role === 'SUPER_ADMIN' ? {} : { branch_id: req.user.branch_id };
+  const where = branchWhere(req.user, { branchKey: 'id' });
+  const childWhere = branchWhere(req.user);
 
   const [branches, branchCount, courseCount, studentCount, activeStudentCount, systemStatistic] = await Promise.all([
-    Branch.findAll({
-      where: branchWhere,
-      include: [{ model: BranchStatistic }],
-      order: [['name', 'ASC']],
+    prisma.branch.findMany({
+      where,
+      include: { BranchStatistic: true },
+      orderBy: { name: 'asc' },
     }),
-    Branch.count({ where: branchWhere }),
-    Course.count({ where: childBranchWhere }),
-    Student.count({ where: childBranchWhere }),
-    Student.count({ where: { ...childBranchWhere, status: 'ACTIVE' } }),
-    SystemStatistic.findOne({ order: [['created_at', 'DESC']] }),
+    prisma.branch.count({ where }),
+    prisma.course.count({ where: childWhere }),
+    prisma.student.count({ where: childWhere }),
+    prisma.student.count({ where: { ...childWhere, status: 'ACTIVE' } }),
+    prisma.systemStatistic.findFirst(),
   ]);
 
   const branchCards = branches.map((branch) => {

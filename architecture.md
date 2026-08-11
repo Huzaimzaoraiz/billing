@@ -39,7 +39,7 @@ SUPER_ADMIN
 - Create, edit, and disable courses for every branch.
 - Create branches.
 
-BRANCH_ADMIN, MANAGER, ACCOUNTANT
+STAFF
 - Access only records belonging to their branch.
 - Cannot create, edit, or disable courses.
 
@@ -63,7 +63,7 @@ Commit Transaction
 
 Every operational record joins back to Branch.
 
-Managers and branch users are filtered by:
+Staff users are filtered by:
 
 Student.branch_id == User.branch_id
 

@@ -217,6 +217,8 @@ button {
 
 .panel {
   padding: 20px;
+  box-shadow: 0 1px 2px rgba(31, 36, 40, 0.03);
+  animation: panel-enter 180ms ease-out both;
 }
 
 .panel-heading {
@@ -287,6 +289,13 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(47, 111, 115, 0.15);
 }
 
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+  color: #8a908f;
+  background: #f3f1ec;
+}
+
 .field small {
   color: #a34437;
   font-weight: 500;
@@ -319,6 +328,7 @@ select:focus {
 
 .primary-button:hover {
   background: #285f62;
+  transform: translateY(-1px);
 }
 
 .primary-button:disabled {
@@ -348,6 +358,30 @@ select:focus {
   color: #8a3329;
   background: #fff0ed;
   border: 1px solid #efc4bc;
+}
+
+.notice.success {
+  color: #226345;
+  background: #e9f6ee;
+  border: 1px solid #b9dfc7;
+}
+
+.billing-journey {
+  display: grid;
+  grid-template-columns: minmax(0, 420px);
+}
+
+@keyframes panel-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.form-notice {
+  margin-top: 16px;
 }
 
 .table-panel {
@@ -424,7 +458,7 @@ tbody tr:last-child td {
   }
 
   .sidebar nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
   }
 
   .nav-button {

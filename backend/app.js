@@ -12,6 +12,7 @@ const branchesRouter = require('./routes/branches');
 const coursesRouter = require('./routes/courses');
 const dashboardRouter = require('./routes/dashboard');
 const studentsRouter = require('./routes/students');
+const usersRouter = require('./routes/users');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const db = require('./database');
 
@@ -44,6 +45,7 @@ app.use('/api/branches', branchesRouter);
 app.use('/api/courses', coursesRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/students', studentsRouter);
+app.use('/api/users', usersRouter);
 
 const distPath = path.join(__dirname, '..', 'dist');
 if (fs.existsSync(distPath)) {

@@ -1,7 +1,5 @@
 const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
-const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
+const { AUTH_COOKIE_NAME, JWT_SECRET } = require('../config');
 
 function authMiddleware(req, res, next) {
   try {

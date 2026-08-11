@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
@@ -24,13 +24,16 @@ import {
   ReceiptText,
   School,
   ShieldCheck,
+  UserRoundCheck,
+  UserCog,
   Users,
 } from 'lucide-react';
 import { api } from './api/client';
+import { appConfig, paymentMethods } from './config';
 
-const currency = new Intl.NumberFormat('en-IN', {
+const currency = new Intl.NumberFormat(appConfig.locale, {
   style: 'currency',
-  currency: 'INR',
+  currency: appConfig.currency,
   maximumFractionDigits: 0,
 });
 
@@ -61,23 +64,33 @@ const studentSchema = z.object({
   joining_date: z.string().optional(),
 });
 
+const userSchema = z.object({
+  branch_id: z.string().uuid('Choose a branch'),
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['STAFF']),
+});
+
 const enrollmentSchema = z.object({
   student_id: z.string().uuid('Choose a student'),
   course_id: z.string().uuid('Choose a course'),
   one_time_fee: z.coerce.number().min(0),
   tuition_fee: z.coerce.number().min(0),
   discount: z.coerce.number().min(0),
-  installment_count: z.coerce.number().int().min(1).max(36),
-  first_due_date: z.string().optional(),
 });
 
 const paymentSchema = z.object({
-  installment_id: z.string().uuid('Choose an installment'),
+  fee_plan_id: z.string().uuid('Choose a fee plan'),
   amount: z.coerce.number().positive('Amount is required'),
   payment_method: z.enum(['CASH', 'BANK_TRANSFER', 'CARD', 'UPI', 'CHEQUE', 'OTHER']),
   transaction_reference: z.string().optional(),
   remarks: z.string().optional(),
 });
+
+function displayRole(role) {
+  return role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : 'STAFF';
+}
 
 function App() {
   const queryClient = useQueryClient();
@@ -92,6 +105,7 @@ function App() {
       {activeView === 'dashboard' && <Dashboard />}
       {activeView === 'branches' && <Branches user={session.data} />}
       {activeView === 'courses' && <Courses user={session.data} />}
+      {activeView === 'staff' && session.data.role === 'SUPER_ADMIN' && <Staff />}
       {activeView === 'students' && <Students user={session.data} />}
       {activeView === 'billing' && <Billing />}
     </Shell>
@@ -108,7 +122,7 @@ function LoginScreen({ onLogin }) {
         <div className="brand-mark">
           <School size={28} />
         </div>
-        <h1>Institute Billing</h1>
+        <h1>{appConfig.name}</h1>
         <p>Sign in to manage branches, students, courses, and fee operations.</p>
         <form onSubmit={form.handleSubmit((values) => login.mutate(values))} className="form-stack">
           <label>
@@ -131,14 +145,29 @@ function LoginScreen({ onLogin }) {
 
 function Shell({ user, activeView, onViewChange, children }) {
   const queryClient = useQueryClient();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const logout = useMutation({
     mutationFn: api.logout,
-    onSuccess: () => queryClient.clear(),
+    onMutate: async () => {
+      setIsSigningOut(true);
+      await queryClient.cancelQueries({ queryKey: ['me'] });
+      const previousUser = queryClient.getQueryData(['me']);
+      queryClient.setQueryData(['me'], null);
+      return { previousUser };
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(['me'], context?.previousUser || null);
+      setIsSigningOut(false);
+    },
+    onSettled: () => {
+      setIsSigningOut(false);
+    },
   });
   const navItems = [
     ['dashboard', LayoutDashboard, 'Dashboard'],
     ['branches', Building2, 'Branches'],
     ['courses', BookOpen, 'Courses'],
+    ...(user.role === 'SUPER_ADMIN' ? [['staff', UserCog, 'Staff']] : []),
     ['students', Users, 'Students'],
     ['billing', ReceiptText, 'Billing'],
   ];
@@ -148,7 +177,7 @@ function Shell({ user, activeView, onViewChange, children }) {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <School size={24} />
-          <span>Institute Billing</span>
+          <span>{appConfig.name}</span>
         </div>
         <nav>
           {navItems.map(([key, Icon, label]) => (
@@ -163,11 +192,11 @@ function Shell({ user, activeView, onViewChange, children }) {
         <header className="topbar">
           <div>
             <strong>{user.name}</strong>
-            <span>{user.role.replaceAll('_', ' ')}</span>
+            <span>{displayRole(user.role)}</span>
           </div>
-          <button className="icon-text-button" onClick={() => logout.mutate()}>
+          <button className="icon-text-button" onClick={() => logout.mutate()} disabled={isSigningOut}>
             <LogOut size={17} />
-            <span>Logout</span>
+            <span>{isSigningOut ? 'Signing out...' : 'Logout'}</span>
           </button>
         </header>
         {children}
@@ -253,6 +282,62 @@ function Branches({ user }) {
           branch.city || '-',
           branch.phone || '-',
           <StatusBadge key={branch.id} active={branch.is_active} />,
+        ])}
+      />
+    </section>
+  );
+}
+
+function Staff() {
+  const queryClient = useQueryClient();
+  const branches = useQuery({ queryKey: ['branches'], queryFn: api.branches });
+  const users = useQuery({ queryKey: ['users'], queryFn: api.users });
+  const form = useForm({
+    resolver: zodResolver(userSchema),
+    defaultValues: { branch_id: '', name: '', email: '', password: '', role: 'STAFF' },
+  });
+  const createUser = useMutation({
+    mutationFn: api.createUser,
+    onSuccess: () => {
+      form.reset({ branch_id: '', name: '', email: '', password: '', role: 'STAFF' });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  return (
+    <section className="view">
+      <ViewHeader title="Staff" subtitle="Branch-specific users managed by super admin." />
+      <section className="panel">
+        <PanelTitle icon={UserCog} title="Add staff" />
+        <form className="form-grid" onSubmit={form.handleSubmit((values) => createUser.mutate(values))}>
+          <Field label="Branch" error={form.formState.errors.branch_id?.message}>
+            <select {...form.register('branch_id')}>
+              <option value="">Choose branch</option>
+              {(branches.data || []).map((branch) => <option key={branch.id} value={branch.id}>{branch.code} · {branch.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Role" error={form.formState.errors.role?.message}>
+            <select {...form.register('role')} disabled>
+              <option value="STAFF">Staff</option>
+            </select>
+          </Field>
+          <Field label="Name" error={form.formState.errors.name?.message}><input {...form.register('name')} /></Field>
+          <Field label="Email" error={form.formState.errors.email?.message}><input type="email" {...form.register('email')} /></Field>
+          <Field label="Password" error={form.formState.errors.password?.message}><input type="password" autoComplete="new-password" {...form.register('password')} /></Field>
+          <div className="form-actions">
+            <button className="primary-button" type="submit" disabled={createUser.isPending}>Save staff</button>
+          </div>
+        </form>
+        {createUser.error && <div className="notice error form-notice">{createUser.error.message}</div>}
+      </section>
+      <DataTable
+        columns={['Name', 'Email', 'Role', 'Branch', 'Status']}
+        rows={(users.data || []).map((user) => [
+          user.name,
+          user.email,
+          displayRole(user.role),
+          user.Branch ? `${user.Branch.code} · ${user.Branch.name}` : '-',
+          <StatusBadge key={user.id} active={user.is_active} />,
         ])}
       />
     </section>
@@ -395,119 +480,212 @@ function Students({ user }) {
 
 function Billing() {
   const queryClient = useQueryClient();
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [paymentReceipt, setPaymentReceipt] = useState(null);
   const students = useQuery({ queryKey: ['students', 'billing'], queryFn: () => api.students() });
-  const courses = useQuery({ queryKey: ['courses', 'billing'], queryFn: () => api.courses() });
-  const accounts = useQuery({ queryKey: ['accounts'], queryFn: () => api.accounts() });
+  const selectedStudent = useMemo(
+    () => (students.data || []).find((student) => student.id === selectedStudentId),
+    [selectedStudentId, students.data],
+  );
+  const courses = useQuery({
+    queryKey: ['courses', 'billing', selectedStudent?.branch_id],
+    queryFn: () => api.courses(selectedStudent?.branch_id),
+    enabled: Boolean(selectedStudent),
+  });
+  const accounts = useQuery({
+    queryKey: ['accounts', selectedStudentId],
+    queryFn: () => api.accounts(selectedStudentId),
+    enabled: Boolean(selectedStudentId),
+  });
   const enrollmentForm = useForm({
     resolver: zodResolver(enrollmentSchema),
-    defaultValues: { student_id: '', course_id: '', one_time_fee: 0, tuition_fee: 0, discount: 0, installment_count: 1, first_due_date: '' },
+    defaultValues: { student_id: '', course_id: '', one_time_fee: 0, tuition_fee: 0, discount: 0 },
   });
   const paymentForm = useForm({
     resolver: zodResolver(paymentSchema),
-    defaultValues: { installment_id: '', amount: '', payment_method: 'CASH', transaction_reference: '', remarks: '' },
+    defaultValues: { fee_plan_id: '', amount: '', payment_method: 'CASH', transaction_reference: '', remarks: '' },
   });
+  const selectedCourseId = enrollmentForm.watch('course_id');
+  const selectedFeePlanId = paymentForm.watch('fee_plan_id');
   const createEnrollment = useMutation({
     mutationFn: api.createEnrollment,
     onSuccess: () => {
-      enrollmentForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      enrollmentForm.reset({
+        student_id: selectedStudentId,
+        course_id: '',
+        one_time_fee: 0,
+        tuition_fee: 0,
+        discount: 0,
+      });
+      queryClient.invalidateQueries({ queryKey: ['accounts', selectedStudentId] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
   const receivePayment = useMutation({
     mutationFn: api.receivePayment,
-    onSuccess: () => {
+    onSuccess: (payment) => {
       paymentForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      setPaymentReceipt(payment);
+      queryClient.invalidateQueries({ queryKey: ['accounts', selectedStudentId] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
-  const installments = (accounts.data || []).flatMap((account) => {
+  const feePlans = useMemo(() => (accounts.data || []).flatMap((account) => {
     const feePlan = account.FeePlan;
-    return (feePlan?.Installments || [])
-      .filter((installment) => installment.status !== 'PAID' && installment.status !== 'CANCELLED')
-      .map((installment) => ({
-        ...installment,
-        label: `${account.Student?.name || 'Student'} · ${account.Course?.code || 'Course'} · ${installment.title}`,
-        remaining: Number(installment.amount_due || 0) - Number(installment.amount_paid || 0),
-      }));
-  });
+    if (!feePlan || feePlan.status === 'PAID' || feePlan.status === 'CANCELLED') return [];
+    return [{
+      ...feePlan,
+      label: `${account.Student?.name || 'Student'} · ${account.Course?.code || 'Course'}`,
+      remaining: Number(feePlan.final_fee || 0) - Number(feePlan.amount_paid || 0),
+    }];
+  }), [accounts.data]);
+  const hasFeePlan = useMemo(() => (accounts.data || []).some((account) => Boolean(account.FeePlan)), [accounts.data]);
+  const selectedCourse = (courses.data || []).find((course) => course.id === selectedCourseId);
+  const selectedFeePlan = feePlans.find((fp) => fp.id === selectedFeePlanId);
+
+  useEffect(() => {
+    enrollmentForm.reset({
+      student_id: selectedStudentId,
+      course_id: '',
+      one_time_fee: 0,
+      tuition_fee: 0,
+      discount: 0,
+    });
+    paymentForm.reset();
+    setPaymentReceipt(null);
+  }, [selectedStudentId]);
+
+  useEffect(() => {
+    if (!selectedCourse) return;
+    enrollmentForm.setValue('one_time_fee', Number(selectedCourse.default_admission_fee || 0));
+    enrollmentForm.setValue('tuition_fee', Number(selectedCourse.default_tuition_fee || 0));
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    if (selectedFeePlan) {
+      paymentForm.setValue('amount', selectedFeePlan.remaining.toFixed(2), { shouldValidate: true });
+      return;
+    }
+
+    paymentForm.setValue('amount', '');
+  }, [selectedFeePlan]);
+
+  useEffect(() => {
+    if (!feePlans.length) return;
+    if (selectedFeePlanId) return;
+
+    const firstFeePlan = feePlans[0];
+    paymentForm.setValue('fee_plan_id', firstFeePlan.id, { shouldValidate: true });
+    paymentForm.setValue('amount', firstFeePlan.remaining.toFixed(2), { shouldValidate: true });
+  }, [feePlans, selectedFeePlanId]);
 
   return (
     <section className="view">
-      <ViewHeader title="Billing" subtitle="Enroll students, generate installments, and receive payments." />
-      <section className="panel">
-        <PanelTitle icon={Plus} title="Create fee plan" />
-        <form className="form-grid" onSubmit={enrollmentForm.handleSubmit((values) => createEnrollment.mutate(clean(values)))}>
-          <Field label="Student" error={enrollmentForm.formState.errors.student_id?.message}>
-            <select {...enrollmentForm.register('student_id')}>
-              <option value="">Choose student</option>
-              {(students.data || []).map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
-            </select>
-          </Field>
-          <Field label="Course" error={enrollmentForm.formState.errors.course_id?.message}>
-            <select {...enrollmentForm.register('course_id')}>
-              <option value="">Choose course</option>
-              {(courses.data || []).map((course) => <option key={course.id} value={course.id}>{course.code} · {course.name}</option>)}
-            </select>
-          </Field>
-          <Field label="Installments"><input type="number" min="1" max="36" {...enrollmentForm.register('installment_count')} /></Field>
-          <Field label="Admission fee"><input type="number" min="0" {...enrollmentForm.register('one_time_fee')} /></Field>
-          <Field label="Tuition fee"><input type="number" min="0" {...enrollmentForm.register('tuition_fee')} /></Field>
-          <Field label="Discount"><input type="number" min="0" {...enrollmentForm.register('discount')} /></Field>
-          <Field label="First due date"><input type="date" {...enrollmentForm.register('first_due_date')} /></Field>
-          <div className="form-actions">
-            <button className="primary-button" type="submit" disabled={createEnrollment.isPending}>Generate plan</button>
-          </div>
-        </form>
+      <ViewHeader title="Billing" subtitle="Choose a student first, then create a fee plan or record a payment." />
+      <section className="panel billing-journey">
+        <PanelTitle icon={UserRoundCheck} title="1. Choose student" />
+        <Field label="Student">
+          <select value={selectedStudentId} onChange={(event) => setSelectedStudentId(event.target.value)}>
+            <option value="">Choose student to continue</option>
+            {(students.data || []).filter((student) => student.status === 'ACTIVE').map((student) => (
+              <option key={student.id} value={student.id}>{student.name}{student.phone ? ` · ${student.phone}` : ''}</option>
+            ))}
+          </select>
+        </Field>
+        {students.error && <div className="notice error form-notice">{students.error.message}</div>}
       </section>
+
+      {selectedStudent && <>
+      {!hasFeePlan ? (
+        <section className="panel">
+          <PanelTitle icon={Plus} title="2. Create fee plan" />
+          <form className="form-grid" onSubmit={enrollmentForm.handleSubmit((values) => createEnrollment.mutate(clean(values)))}>
+            <input type="hidden" {...enrollmentForm.register('student_id')} />
+            <Field label="Course" error={enrollmentForm.formState.errors.course_id?.message}>
+              <select {...enrollmentForm.register('course_id')} disabled={courses.isLoading || !courses.data?.length}>
+                <option value="">{courses.isLoading ? 'Loading courses...' : 'Choose course'}</option>
+                {(courses.data || []).map((course) => <option key={course.id} value={course.id}>{course.code} · {course.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Admission fee"><input type="number" min="0" {...enrollmentForm.register('one_time_fee')} /></Field>
+            <Field label="Tuition fee"><input type="number" min="0" {...enrollmentForm.register('tuition_fee')} /></Field>
+            <Field label="Discount"><input type="number" min="0" {...enrollmentForm.register('discount')} /></Field>
+            <div className="form-actions">
+              <button className="primary-button" type="submit" disabled={createEnrollment.isPending || !courses.data?.length}>{createEnrollment.isPending ? 'Generating...' : 'Generate plan'}</button>
+            </div>
+          </form>
+          {courses.error && <div className="notice error form-notice">{courses.error.message}</div>}
+          {createEnrollment.error && <div className="notice error form-notice">{createEnrollment.error.message}</div>}
+        </section>
+      ) : (
+        <section className="panel">
+          <PanelTitle icon={Plus} title="2. Fee plan created" />
+          <div className="notice success form-notice">Fee plan already exists for this student. Use the payment section below.</div>
+        </section>
+      )}
       <section className="panel">
-        <PanelTitle icon={CircleDollarSign} title="Receive payment" />
+        <PanelTitle icon={CircleDollarSign} title="3. Receive payment" />
         <form className="form-grid" onSubmit={paymentForm.handleSubmit((values) => receivePayment.mutate(clean(values)))}>
-          <Field label="Installment" error={paymentForm.formState.errors.installment_id?.message}>
-            <select {...paymentForm.register('installment_id')}>
-              <option value="">Choose installment</option>
-              {installments.map((installment) => (
-                <option key={installment.id} value={installment.id}>{installment.label} · {currency.format(installment.remaining)} due</option>
+          <Field label="Fee Plan" error={paymentForm.formState.errors.fee_plan_id?.message}>
+            <select {...paymentForm.register('fee_plan_id')} disabled={accounts.isLoading || !feePlans.length}>
+              <option value="">{accounts.isLoading ? 'Loading plans...' : 'Choose fee plan'}</option>
+              {feePlans.map((fp) => (
+                <option key={fp.id} value={fp.id}>{fp.label} · {currency.format(fp.remaining)} remaining</option>
               ))}
             </select>
           </Field>
-          <Field label="Amount" error={paymentForm.formState.errors.amount?.message}><input type="number" min="1" {...paymentForm.register('amount')} /></Field>
+          <Field label="Amount" error={paymentForm.formState.errors.amount?.message}>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0.01"
+              step="0.01"
+              max={selectedFeePlan?.remaining || undefined}
+              placeholder="0.00"
+              readOnly={!selectedFeePlan}
+              {...paymentForm.register('amount')}
+            />
+          </Field>
           <Field label="Method">
             <select {...paymentForm.register('payment_method')}>
-              <option value="CASH">Cash</option>
-              <option value="BANK_TRANSFER">Bank transfer</option>
-              <option value="CARD">Card</option>
-              <option value="UPI">UPI</option>
-              <option value="CHEQUE">Cheque</option>
-              <option value="OTHER">Other</option>
+              {paymentMethods.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </Field>
           <Field label="Reference"><input {...paymentForm.register('transaction_reference')} /></Field>
           <Field label="Remarks"><input {...paymentForm.register('remarks')} /></Field>
           <div className="form-actions">
-            <button className="primary-button" type="submit" disabled={receivePayment.isPending}>Receive payment</button>
+            <button className="primary-button" type="submit" disabled={receivePayment.isPending || !selectedFeePlan}>{receivePayment.isPending ? 'Saving...' : 'Record payment'}</button>
           </div>
         </form>
+        {receivePayment.error && <div className="notice error form-notice">{receivePayment.error.message}</div>}
+        {paymentReceipt && <div className="notice success form-notice">Payment recorded successfully. Receipt: <strong>{paymentReceipt.receipt_number}</strong></div>}
       </section>
       <DataTable
-        columns={['Student', 'Course', 'Final fee', 'Paid', 'Open installments']}
+        columns={['Student', 'Course', 'Final fee', 'Paid', 'Remaining', 'Status']}
         rows={(accounts.data || []).map((account) => {
           const feePlan = account.FeePlan;
-          const installmentsForAccount = feePlan?.Installments || [];
-          const paid = installmentsForAccount.reduce((sum, installment) => sum + Number(installment.amount_paid || 0), 0);
-          const open = installmentsForAccount.filter((installment) => installment.status !== 'PAID').length;
+          const finalFee = Number(feePlan?.final_fee || 0);
+          const paid = Number(feePlan?.amount_paid || 0);
+          const remaining = finalFee - paid;
           return [
             account.Student?.name || '-',
             account.Course?.name || '-',
-            currency.format(Number(feePlan?.final_fee || 0)),
+            currency.format(finalFee),
             currency.format(paid),
-            open,
+            currency.format(remaining),
+            feePlan?.status || '-',
           ];
         })}
       />
+      </>}
     </section>
   );
+}
+
+
+
+function toCents(value) {
+  return Math.round(Number(value || 0) * 100);
 }
 
 function Metric({ icon: Icon, label, value }) {

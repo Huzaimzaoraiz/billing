@@ -20,7 +20,7 @@
 - name
 - email (unique, required)
 - password_hash
-- role (SUPER_ADMIN, BRANCH_ADMIN, MANAGER, ACCOUNTANT)
+- role (SUPER_ADMIN, STAFF)
 - is_active
 - created_at
 - updated_at
@@ -192,7 +192,7 @@ User
 
 ## Production Rules
 
-- Managers, accountants, and branch admins must only access records from their own branch.
+- STAFF users must only access records from their own branch.
 - SUPER_ADMIN can access every branch.
 - A non-super-admin user must always have a branch_id.
 - Use fixed enum statuses instead of free text.

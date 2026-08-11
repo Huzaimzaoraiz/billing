@@ -12,24 +12,27 @@ Production-oriented billing software for multi-branch coaching institutes.
 
 ## Roles
 
-- SUPER_ADMIN: manages all branches and is the only role allowed to create, edit, or disable courses.
-- BRANCH_ADMIN: manages records inside their own branch.
-- MANAGER: manages students and day-to-day branch records.
-- ACCOUNTANT: receives and reviews payments inside their own branch.
+- SUPER_ADMIN: manages all branches and can create, edit, or disable courses.
+- STAFF: branch-specific users who manage branch records inside their own branch.
 
 ## SQL Setup
 
-Copy `.env.example` to `.env` and set your SQL Server values:
+Copy `.env.example` to `.env` and set your Postgres values:
 
 ```env
-DB_DIALECT=mssql
+DB_DIALECT=postgres
 DB_HOST=127.0.0.1
-DB_PORT=1433
-DB_NAME=billing_db
-DB_USER=sa
-DB_PASS=YourStrong@Password123
+DB_PORT=5432
+DB_NAME=mydb
+DB_USER=postgres
+DB_PASS=YourSecurePassword
 DB_ENCRYPT=false
-JWT_SECRET=replace_with_a_strong_secret
+JWT_SECRET=a_random_secret_of_at_least_32_characters
+BOOTSTRAP_ADMIN_EMAIL=admin@your-domain.example
+BOOTSTRAP_ADMIN_PASSWORD=a_strong_initial_password
+VITE_APP_NAME=Institute Billing
+VITE_LOCALE=en-IN
+VITE_CURRENCY=INR
 ```
 
 For production, use migrations and keep both sync flags disabled:
@@ -39,6 +42,12 @@ DB_SYNC_ALTER=false
 DB_SYNC_FORCE=false
 ```
 
+If you want to run the database locally with Docker, use:
+
+```bash
+docker run --name postgres-container -e POSTGRES_PASSWORD=YourSecurePassword -e POSTGRES_DB=mydb -p 5432:5432 -d postgres:latest
+```
+
 ## Run
 
 ```bash
@@ -46,14 +55,21 @@ npm install --cache .npm-cache
 npm run dev
 ```
 
-Frontend: `http://127.0.0.1:5173`
+Frontend: `http://127.0.0.1:5173` unless Vite picks the next free port, such as `5174`.
 
-Backend: `http://127.0.0.1:3000`
+Backend: `http://127.0.0.1:3001` in development.
 
-Default super admin is created on first startup:
+Set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` before the first startup to create the initial super admin. These values are only used when that account does not already exist; remove them from the runtime environment after setup.
 
-- email: `admin@example.com`
-- password: value of `ADMIN_PASSWORD`, or `admin` if unset
+## Add Staff Users
+
+Create the branch first from the Branches screen. Then use its branch code to add staff:
+
+```bash
+npm run user:create -- --name "Staff Name" --email staff@example.com --password staff123 --role STAFF --branch-code 001
+```
+
+Use `STAFF` for `--role`.
 
 ## Production Build
 

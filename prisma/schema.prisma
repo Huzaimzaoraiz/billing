@@ -1,0 +1,216 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Branch {
+  id              String            @id @default(uuid()) @db.Uuid
+  name            String
+  code            String            @unique @db.VarChar(30)
+  city            String?
+  address         String?
+  phone           String?
+  email           String?
+  is_active       Boolean           @default(true)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  Users           User[]
+  Courses         Course[]
+  Batches         Batch[]
+  Students        Student[]
+  Enrollments     Enrollment[]
+  BranchStatistic BranchStatistic?
+  AuditLogs       AuditLog[]
+
+  @@map("branches")
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  branch_id     String?    @db.Uuid
+  name          String
+  email         String     @unique
+  password_hash String
+  role          String     @default("STAFF") @db.VarChar(40)
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  Branch          Branch?    @relation(fields: [branch_id], references: [id])
+  CreatedFeePlans FeePlan[]  @relation("CreatedBy")
+  ReceivedPayments Payment[] @relation("ReceivedBy")
+  VoidedPayments   Payment[] @relation("VoidedBy")
+  AuditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model Course {
+  id                    String       @id @default(uuid()) @db.Uuid
+  branch_id             String       @db.Uuid
+  name                  String
+  code                  String       @db.VarChar(30)
+  duration_months       Int          @default(1)
+  default_admission_fee Decimal      @default(0) @db.Decimal(12, 2)
+  default_tuition_fee   Decimal      @default(0) @db.Decimal(12, 2)
+  is_active             Boolean      @default(true)
+  created_at            DateTime     @default(now())
+  updated_at            DateTime     @updatedAt
+
+  Branch       Branch       @relation(fields: [branch_id], references: [id])
+  Batches      Batch[]
+  Enrollments  Enrollment[]
+
+  @@map("courses")
+}
+
+model Batch {
+  id          String       @id @default(uuid()) @db.Uuid
+  branch_id   String       @db.Uuid
+  course_id   String       @db.Uuid
+  name        String
+  start_date  DateTime?    @db.Date
+  end_date    DateTime?    @db.Date
+  status      String       @default("PLANNED") @db.VarChar(40)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  Branch      Branch       @relation(fields: [branch_id], references: [id])
+  Course      Course       @relation(fields: [course_id], references: [id])
+  Enrollments Enrollment[]
+
+  @@map("batches")
+}
+
+model Student {
+  id           String       @id @default(uuid()) @db.Uuid
+  branch_id    String       @db.Uuid
+  name         String
+  father_name  String?
+  phone        String?
+  parent_phone String?
+  joining_date DateTime?    @db.Date
+  status       String       @default("ACTIVE") @db.VarChar(40)
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  Branch       Branch       @relation(fields: [branch_id], references: [id])
+  Enrollments  Enrollment[]
+
+  @@map("students")
+}
+
+model Enrollment {
+  id           String    @id @default(uuid()) @db.Uuid
+  branch_id    String    @db.Uuid
+  student_id   String    @db.Uuid
+  course_id    String    @db.Uuid
+  batch_id     String?   @db.Uuid
+  enrolled_on  DateTime  @default(now()) @db.Date
+  completed_on DateTime? @db.Date
+  status       String    @default("ACTIVE") @db.VarChar(40)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  Branch  Branch   @relation(fields: [branch_id], references: [id])
+  Student Student  @relation(fields: [student_id], references: [id])
+  Course  Course   @relation(fields: [course_id], references: [id])
+  Batch   Batch?   @relation(fields: [batch_id], references: [id])
+  FeePlan FeePlan?
+
+  @@map("enrollments")
+}
+
+model FeePlan {
+  id            String    @id @default(uuid()) @db.Uuid
+  enrollment_id String    @unique @db.Uuid
+  total_fee     Decimal   @default(0) @db.Decimal(12, 2)
+  one_time_fee  Decimal   @default(0) @db.Decimal(12, 2)
+  tuition_fee   Decimal   @default(0) @db.Decimal(12, 2)
+  discount      Decimal   @default(0) @db.Decimal(12, 2)
+  final_fee     Decimal   @default(0) @db.Decimal(12, 2)
+  amount_paid   Decimal   @default(0) @db.Decimal(12, 2)
+  status        String    @default("DRAFT") @db.VarChar(40)
+  created_by    String?   @db.Uuid
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  Enrollment Enrollment @relation(fields: [enrollment_id], references: [id])
+  Creator    User?      @relation("CreatedBy", fields: [created_by], references: [id])
+  Payments   Payment[]
+
+  @@map("fee_plans")
+}
+
+model Payment {
+  id                    String    @id @default(uuid()) @db.Uuid
+  fee_plan_id           String    @db.Uuid
+  amount                Decimal   @db.Decimal(12, 2)
+  payment_date          DateTime  @default(now())
+  payment_method        String    @default("CASH") @db.VarChar(40)
+  transaction_reference String?
+  receipt_number        String    @unique
+  status                String    @default("SUCCESS") @db.VarChar(40)
+  remarks               String?   @db.Text
+  received_by           String?   @db.Uuid
+  voided_by             String?   @db.Uuid
+  voided_at             DateTime?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  FeePlan    FeePlan @relation(fields: [fee_plan_id], references: [id])
+  Receiver   User?   @relation("ReceivedBy", fields: [received_by], references: [id])
+  Voider     User?   @relation("VoidedBy", fields: [voided_by], references: [id])
+
+  @@map("payments")
+}
+
+model BranchStatistic {
+  id              String   @id @default(uuid()) @db.Uuid
+  branch_id       String   @unique @db.Uuid
+  total_income    Decimal  @default(0) @db.Decimal(12, 2)
+  today_income    Decimal  @default(0) @db.Decimal(12, 2)
+  month_income    Decimal  @default(0) @db.Decimal(12, 2)
+  total_students  Int      @default(0)
+  active_students Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  Branch Branch @relation(fields: [branch_id], references: [id])
+
+  @@map("branch_statistics")
+}
+
+model SystemStatistic {
+  id              String   @id @default(uuid()) @db.Uuid
+  total_income    Decimal  @default(0) @db.Decimal(12, 2)
+  today_income    Decimal  @default(0) @db.Decimal(12, 2)
+  month_income    Decimal  @default(0) @db.Decimal(12, 2)
+  total_students  Int      @default(0)
+  active_students Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("system_statistics")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  branch_id   String?  @db.Uuid
+  user_id     String?  @db.Uuid
+  action      String   @db.VarChar(80)
+  entity_type String   @db.VarChar(80)
+  entity_id   String?  @db.Uuid
+  details     String?  @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  Branch Branch? @relation(fields: [branch_id], references: [id])
+  User   User?   @relation(fields: [user_id], references: [id])
+
+  @@map("audit_logs")
+}

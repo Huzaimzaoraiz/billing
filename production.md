@@ -47,7 +47,7 @@ This provides O(1) dashboard queries while keeping Payment as the immutable ledg
 ## Access Control
 
 - SUPER_ADMIN can read and manage every branch.
-- BRANCH_ADMIN, MANAGER, and ACCOUNTANT are limited to their own branch.
+- STAFF users are limited to their own branch.
 - Non-super-admin users must always have branch_id.
 - API queries should always apply branch filters before returning student, enrollment, fee, or payment data.
 
