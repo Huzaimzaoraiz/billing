@@ -8,7 +8,7 @@
     "dev:backend": "PORT=3000 nodemon backend/server.js",
     "dev:frontend": "vite frontend --host 127.0.0.1 --port 5173",
     "start": "node backend/server.js",
-    "build": "vite build frontend",
+    "build": "prisma generate && vite build frontend",
     "preview": "vite preview frontend --host 127.0.0.1 --port 4173",
     "check": "node --check backend/config.js && node --check backend/database.js && node --check backend/app.js && node --check backend/server.js && node --check backend/routes/auth.js && node --check backend/routes/billing.js && node --check backend/routes/branches.js && node --check backend/routes/courses.js && node --check backend/routes/dashboard.js && node --check backend/routes/students.js && node --check backend/routes/users.js && vite build frontend"
   },
