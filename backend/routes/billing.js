@@ -24,7 +24,7 @@ const enrollmentBody = z.object({
 });
 const paymentBody = z.object({
   fee_plan_id: z.string().uuid(),
-  amount: z.coerce.number(),
+  amount: z.coerce.number().positive(),
   payment_method: z.enum(PAYMENT_METHODS).default('CASH'),
   transaction_reference: z.string().trim().optional().nullable(),
   remarks: z.string().trim().optional().nullable(),
