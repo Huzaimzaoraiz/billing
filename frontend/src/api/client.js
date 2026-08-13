@@ -1,12 +1,24 @@
 const API_BASE = '/api';
+let tokenProvider = null;
+
+export const setTokenProvider = (provider) => {
+  tokenProvider = provider;
+};
 
 async function request(path, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  if (tokenProvider) {
+    const token = await tokenProvider();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    credentials: 'omit',
+    headers,
     ...options,
   });
 
@@ -23,9 +35,8 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  sync: (payload) => request('/auth/sync', { method: 'POST', body: JSON.stringify(payload) }),
   me: () => request('/auth/me'),
-  login: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
   dashboard: () => request('/dashboard/summary'),
   branches: () => request('/branches'),
   createBranch: (payload) => request('/branches', { method: 'POST', body: JSON.stringify(payload) }),
@@ -38,7 +49,12 @@ export const api = {
   disableCourse: (id) => request(`/courses/${id}`, { method: 'DELETE' }),
   students: (branchId) => request(`/students${branchId ? `?branch_id=${encodeURIComponent(branchId)}` : ''}`),
   createStudent: (payload) => request('/students', { method: 'POST', body: JSON.stringify(payload) }),
+  updateStudent: (id, payload) => request(`/students/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deactivateStudent: (id) => request(`/students/${id}`, { method: 'DELETE' }),
   accounts: (studentId) => request(`/billing/accounts${studentId ? `?student_id=${encodeURIComponent(studentId)}` : ''}`),
   createEnrollment: (payload) => request('/billing/enrollments', { method: 'POST', body: JSON.stringify(payload) }),
   receivePayment: (payload) => request('/billing/payments', { method: 'POST', body: JSON.stringify(payload) }),
+  expenses: (branchId) => request(`/expenses${branchId ? `?branch_id=${encodeURIComponent(branchId)}` : ''}`),
+  createExpense: (payload) => request('/expenses', { method: 'POST', body: JSON.stringify(payload) }),
+  deleteExpense: (id) => request(`/expenses/${id}`, { method: 'DELETE' }),
 };

@@ -23,6 +23,7 @@ model Branch {
   Batches         Batch[]
   Students        Student[]
   Enrollments     Enrollment[]
+  Expenses        Expense[]
   BranchStatistic BranchStatistic?
   AuditLogs       AuditLog[]
 
@@ -31,10 +32,10 @@ model Branch {
 
 model User {
   id            String     @id @default(uuid()) @db.Uuid
+  clerk_id      String?    @unique @db.VarChar(255)
   branch_id     String?    @db.Uuid
   name          String
   email         String     @unique
-  password_hash String
   role          String     @default("STAFF") @db.VarChar(40)
   is_active     Boolean    @default(true)
   created_at    DateTime   @default(now())
@@ -44,6 +45,7 @@ model User {
   CreatedFeePlans FeePlan[]  @relation("CreatedBy")
   ReceivedPayments Payment[] @relation("ReceivedBy")
   VoidedPayments   Payment[] @relation("VoidedBy")
+  CreatedExpenses  Expense[]
   AuditLogs       AuditLog[]
 
   @@map("users")
@@ -175,6 +177,9 @@ model BranchStatistic {
   total_income    Decimal  @default(0) @db.Decimal(12, 2)
   today_income    Decimal  @default(0) @db.Decimal(12, 2)
   month_income    Decimal  @default(0) @db.Decimal(12, 2)
+  total_expense   Decimal  @default(0) @db.Decimal(12, 2)
+  today_expense   Decimal  @default(0) @db.Decimal(12, 2)
+  month_expense   Decimal  @default(0) @db.Decimal(12, 2)
   total_students  Int      @default(0)
   active_students Int      @default(0)
   created_at      DateTime @default(now())
@@ -190,6 +195,9 @@ model SystemStatistic {
   total_income    Decimal  @default(0) @db.Decimal(12, 2)
   today_income    Decimal  @default(0) @db.Decimal(12, 2)
   month_income    Decimal  @default(0) @db.Decimal(12, 2)
+  total_expense   Decimal  @default(0) @db.Decimal(12, 2)
+  today_expense   Decimal  @default(0) @db.Decimal(12, 2)
+  month_expense   Decimal  @default(0) @db.Decimal(12, 2)
   total_students  Int      @default(0)
   active_students Int      @default(0)
   created_at      DateTime @default(now())
@@ -213,4 +221,21 @@ model AuditLog {
   User   User?   @relation(fields: [user_id], references: [id])
 
   @@map("audit_logs")
+}
+
+model Expense {
+  id           String   @id @default(uuid()) @db.Uuid
+  branch_id    String   @db.Uuid
+  amount       Decimal  @db.Decimal(12, 2)
+  category     String   @db.VarChar(100)
+  description  String?  @db.Text
+  expense_date DateTime @default(now()) @db.Date
+  created_by   String?  @db.Uuid
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  Branch  Branch @relation(fields: [branch_id], references: [id])
+  Creator User?  @relation(fields: [created_by], references: [id])
+
+  @@map("expenses")
 }
