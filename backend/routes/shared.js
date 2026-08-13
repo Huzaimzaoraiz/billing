@@ -25,7 +25,7 @@ function branchWhere(user, { branchId = null, where = {}, branchKey = 'branch_id
   }
 
   if (user.role !== 'SUPER_ADMIN') {
-    scopedWhere[branchKey] = user.branch_id;
+    scopedWhere[branchKey] = user.branch_id || '00000000-0000-0000-0000-000000000000';
   }
 
   return scopedWhere;

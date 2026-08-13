@@ -91,7 +91,7 @@ router.post('/', validate({ body: studentBody }), asyncHandler(async (req, res) 
 
 router.get('/:id', validate({ params: idParams }), asyncHandler(async (req, res) => {
   const student = await prisma.student.findFirst({
-    where: branchWhere(req.user, { id: req.params.id }),
+    where: branchWhere(req.user, { where: { id: req.params.id } }),
     include: { Branch: { select: { id: true, name: true, code: true } } },
   });
   if (!student) return res.status(404).json({ error: 'student not found' });
@@ -99,7 +99,7 @@ router.get('/:id', validate({ params: idParams }), asyncHandler(async (req, res)
 }));
 
 router.patch('/:id', validate({ params: idParams, body: studentUpdateBody }), asyncHandler(async (req, res) => {
-  const student = await prisma.student.findFirst({ where: branchWhere(req.user, { id: req.params.id }) });
+  const student = await prisma.student.findFirst({ where: branchWhere(req.user, { where: { id: req.params.id } }) });
   if (!student) return res.status(404).json({ error: 'student not found' });
 
   const data = { ...req.body };
@@ -128,7 +128,7 @@ router.patch('/:id', validate({ params: idParams, body: studentUpdateBody }), as
 }));
 
 router.delete('/:id', validate({ params: idParams }), asyncHandler(async (req, res) => {
-  const student = await prisma.student.findFirst({ where: branchWhere(req.user, { id: req.params.id }) });
+  const student = await prisma.student.findFirst({ where: branchWhere(req.user, { where: { id: req.params.id } }) });
   if (!student) return res.status(404).json({ error: 'student not found' });
 
   await prisma.$transaction(async (tx) => {

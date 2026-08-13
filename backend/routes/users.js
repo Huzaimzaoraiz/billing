@@ -1,6 +1,5 @@
 const express = require('express');
 const { z } = require('zod');
-const bcrypt = require('bcryptjs');
 
 const { prisma } = require('../database');
 const asyncHandler = require('../middleware/asyncHandler');
@@ -15,7 +14,6 @@ const userBody = z.object({
   branch_id: z.string().uuid('Choose a branch'),
   name: z.string().trim().min(2, 'Name is required'),
   email: z.string().trim().email('Enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(USER_ROLES).default('STAFF'),
 });
 
@@ -38,9 +36,7 @@ router.post('/', validate({ body: userBody }), asyncHandler(async (req, res) => 
   const branch = await prisma.branch.findUnique({ where: { id: req.body.branch_id } });
   if (!branch) return res.status(404).json({ error: 'branch not found' });
 
-  const password_hash = await bcrypt.hash(req.body.password, 10);
-  const data = { ...req.body, password_hash };
-  delete data.password;
+  const data = { ...req.body };
 
   const user = await prisma.$transaction(async (tx) => {
     const created = await tx.user.create({ data });

@@ -64,7 +64,7 @@ router.post('/', requireSuperAdmin, validate({ body: courseBody }), asyncHandler
 }));
 
 router.patch('/:id', requireSuperAdmin, validate({ params: idParams, body: courseUpdateBody }), asyncHandler(async (req, res) => {
-  const course = await prisma.course.findUnique({ where: { id: req.params.id } });
+  const course = await prisma.course.findFirst({ where: branchWhere(req.user, { where: { id: req.params.id } }) });
   if (!course) return res.status(404).json({ error: 'course not found' });
 
   const updatedCourse = await prisma.$transaction(async (tx) => {
@@ -89,7 +89,7 @@ router.patch('/:id', requireSuperAdmin, validate({ params: idParams, body: cours
 }));
 
 router.delete('/:id', requireSuperAdmin, validate({ params: idParams }), asyncHandler(async (req, res) => {
-  const course = await prisma.course.findUnique({ where: { id: req.params.id } });
+  const course = await prisma.course.findFirst({ where: branchWhere(req.user, { where: { id: req.params.id } }) });
   if (!course) return res.status(404).json({ error: 'course not found' });
 
   await prisma.$transaction(async (tx) => {

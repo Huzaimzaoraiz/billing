@@ -54,7 +54,7 @@ router.post('/', requireSuperAdmin, validate({ body: branchBody }), asyncHandler
 }));
 
 router.patch('/:id', requireSuperAdmin, validate({ params: idParams, body: branchUpdateBody }), asyncHandler(async (req, res) => {
-  const branch = await prisma.branch.findUnique({ where: { id: req.params.id } });
+  const branch = await prisma.branch.findFirst({ where: branchWhere(req.user, { branchKey: 'id', where: { id: req.params.id } }) });
   if (!branch) return res.status(404).json({ error: 'branch not found' });
 
   const updatedBranch = await prisma.$transaction(async (tx) => {
