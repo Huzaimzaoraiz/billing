@@ -69,12 +69,14 @@ export default function Dashboard({ user }) {
         <section className="panel">
           <h3>Branch Performance</h3>
           <DataTable
-            columns={['Branch', 'Students', 'Active', 'Month Income']}
+            columns={['Branch', 'Students', 'Active', 'Month Income', 'Month Expense', 'Net Profit']}
             rows={data.branches.map(b => [
               b.name,
               b.total_students,
               b.active_students,
               currency.format(b.month_income),
+              currency.format(b.month_expense),
+              currency.format(b.month_income - b.month_expense),
             ])}
           />
         </section>

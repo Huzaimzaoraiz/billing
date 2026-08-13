@@ -32,7 +32,9 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+}));
 app.use(cors({
   credentials: true,
   origin: allowedOrigins,

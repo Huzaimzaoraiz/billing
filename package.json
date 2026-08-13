@@ -5,7 +5,7 @@
   "description": "Production-ready SQL billing platform for multi-branch coaching institutes.",
   "scripts": {
     "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\"",
-    "dev:backend": "PORT=3001 nodemon backend/server.js",
+    "dev:backend": "PORT=3000 nodemon backend/server.js",
     "dev:frontend": "vite frontend --host 127.0.0.1 --port 5173",
     "start": "node backend/server.js",
     "build": "vite build frontend",
