@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Building2, BookOpen, Users, UserCheck, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { PiBankBold as Building2, PiBooksBold as BookOpen, PiGraduationCapBold as Users, PiUserCircleCheckBold as UserCheck, PiTrendUpBold as TrendingUp, PiTrendDownBold as TrendingDown, PiWalletBold as Wallet } from 'react-icons/pi';
 import { api } from '../api/client';
 import { currency } from '../utils';
 import Metric from '../components/Metric';
@@ -10,10 +10,10 @@ import DataTable from '../components/DataTable';
 
 export default function Dashboard({ user }) {
   const [selectedBranch, setSelectedBranch] = useState('');
-  
+
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: api.branches, enabled: user?.role === 'SUPER_ADMIN' });
-  const { data, isLoading } = useQuery({ 
-    queryKey: ['dashboard', selectedBranch], 
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard', selectedBranch],
     queryFn: () => api.dashboard(selectedBranch)
   });
 
@@ -28,7 +28,7 @@ export default function Dashboard({ user }) {
   return (
     <section className="view">
       <ViewHeader title="Dashboard" subtitle="Overview of your business metrics." />
-      
+
       {user?.role === 'SUPER_ADMIN' && (
         <div className="toolbar">
           <select value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)}>
@@ -39,7 +39,9 @@ export default function Dashboard({ user }) {
       )}
 
       <div className="metric-grid">
-        <Metric icon={Building2} label="Branches" value={data.totals.branches} />
+        {user?.role === 'SUPER_ADMIN' && !selectedBranch && (
+          <Metric icon={Building2} label="Branches" value={data.totals.branches} />
+        )}
         <Metric icon={BookOpen} label="Courses" value={data.totals.courses} />
         <Metric icon={Users} label="Total Students" value={data.totals.students} />
         <Metric icon={UserCheck} label="Active Students" value={data.totals.active_students} />
@@ -66,10 +68,11 @@ export default function Dashboard({ user }) {
           </div>
         </section>
 
+        {user?.role === 'SUPER_ADMIN' && !selectedBranch && (
         <section className="panel">
           <h3>Branch Performance</h3>
           <DataTable
-            columns={['Branch', 'Students', 'Active', 'Month Income', 'Month Expense', 'Net Profit']}
+            columns={['Branch:', 'Students:', 'Active:', 'Month Income:', 'Month Expense:', 'Net Profit:']}
             rows={data.branches.map(b => [
               b.name,
               b.total_students,
@@ -80,6 +83,7 @@ export default function Dashboard({ user }) {
             ])}
           />
         </section>
+        )}
       </div>
     </section>
   );

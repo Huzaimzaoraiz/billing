@@ -37,7 +37,7 @@ async function request(path, options = {}) {
 export const api = {
   sync: (payload) => request('/auth/sync', { method: 'POST', body: JSON.stringify(payload) }),
   me: () => request('/auth/me'),
-  dashboard: () => request('/dashboard/summary'),
+  dashboard: (branchId) => request(`/dashboard/summary${branchId ? `?branch_id=${encodeURIComponent(branchId)}` : ''}`),
   branches: () => request('/branches'),
   createBranch: (payload) => request('/branches', { method: 'POST', body: JSON.stringify(payload) }),
   updateBranch: (id, payload) => request(`/branches/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),

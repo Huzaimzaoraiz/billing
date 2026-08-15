@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Plus, Trash2 } from 'lucide-react';
+import { PiPlusBold as Plus, PiTrashBold as Trash2 } from 'react-icons/pi';
 import { api } from '../api/client';
 import { currency } from '../utils';
 import ViewHeader from '../components/ViewHeader';

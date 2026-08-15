@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth, useUser, SignIn, SignedIn, SignedOut } from '@clerk/clerk-react';
-import { School, ShieldCheck } from 'lucide-react';
+import { PiGraduationCapBold as School, PiShieldCheckBold as ShieldCheck } from 'react-icons/pi';
 import { api, setTokenProvider } from './api/client';
 import { appConfig } from './config';
 import Shell from './components/Shell';

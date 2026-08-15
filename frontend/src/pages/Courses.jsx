@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, ShieldCheck } from 'lucide-react';
+import { PiPlusBold as Plus, PiShieldCheckBold as ShieldCheck } from 'react-icons/pi';
 import { api } from '../api/client';
 import { courseSchema } from '../schemas';
 import { currency } from '../utils';

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { CheckCircle2 } from 'lucide-react';
+import { PiCheckCircleBold as CheckCircle2 } from 'react-icons/pi';
 
 export default function StatusBadge({ active }) {
   return (

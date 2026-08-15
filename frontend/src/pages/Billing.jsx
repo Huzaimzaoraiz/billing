@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CircleDollarSign, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { PiCurrencyDollarBold as CircleDollarSign, PiPlusBold as Plus, PiCheckCircleBold as CheckCircle2, PiWarningCircleBold as AlertCircle } from 'react-icons/pi';
 import { api } from '../api/client';
 import { enrollmentSchema, paymentSchema } from '../schemas';
 import { currency, clean } from '../utils';
@@ -17,20 +17,20 @@ export default function Billing() {
   const queryClient = useQueryClient();
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [paymentReceipt, setPaymentReceipt] = useState(null);
-  
+
   const students = useQuery({ queryKey: ['students', 'billing'], queryFn: () => api.students() });
-  
+
   const selectedStudent = useMemo(
     () => (students.data || []).find((student) => student.id === selectedStudentId),
     [selectedStudentId, students.data],
   );
-  
+
   const courses = useQuery({
     queryKey: ['courses', 'billing', selectedStudent?.branch_id],
     queryFn: () => api.courses(selectedStudent?.branch_id),
     enabled: Boolean(selectedStudent),
   });
-  
+
   const accounts = useQuery({
     queryKey: ['accounts', selectedStudentId],
     queryFn: () => api.accounts(selectedStudentId),
@@ -41,7 +41,7 @@ export default function Billing() {
     resolver: zodResolver(enrollmentSchema),
     defaultValues: { student_id: '', course_id: '', one_time_fee: 0, tuition_fee: 0, discount: 0 },
   });
-  
+
   const paymentForm = useForm({
     resolver: zodResolver(paymentSchema),
     defaultValues: { fee_plan_id: '', amount: 0, payment_method: 'CASH', transaction_reference: '', remarks: '' },
@@ -86,14 +86,14 @@ export default function Billing() {
   return (
     <section className="view">
       <ViewHeader title="Billing & Accounts" subtitle="Manage student enrollments and fee collection." />
-      
+
       <section className="panel" style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'linear-gradient(to right, var(--bg-surface), #f8fafc)' }}>
         <div style={{ flex: 1 }}>
           <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' }}>
             Select Student Account
           </label>
-          <select 
-            value={selectedStudentId} 
+          <select
+            value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
             style={{ width: '100%', maxWidth: '480px', fontSize: '16px', fontWeight: 500, padding: '12px 16px', height: 'auto', boxShadow: 'var(--shadow-sm)' }}
           >
@@ -117,15 +117,11 @@ export default function Billing() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          
+
           {/* Action Forms (Side by side) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
             <section className="panel">
               <PanelTitle icon={Plus} title="New Enrollment" />
-              <div className="notice" style={{ backgroundColor: '#fefce8', color: '#854d0e', border: '1px solid #fef08a', marginBottom: '16px' }}>
-                <AlertCircle size={16} />
-                Note: A student can only have one active fee plan per course.
-              </div>
               <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} onSubmit={enrollmentForm.handleSubmit((values) => createEnrollment.mutate(clean(values)))}>
                 <Field label="Course" error={enrollmentForm.formState.errors.course_id?.message}>
                   <select {...enrollmentForm.register('course_id')}>
@@ -176,11 +172,11 @@ export default function Billing() {
                     <Field label="Transaction Ref (Optional)"><input {...paymentForm.register('transaction_reference')} placeholder="Cheque no, UPI ref..." /></Field>
                     <Field label="Remarks (Optional)"><input {...paymentForm.register('remarks')} /></Field>
                   </div>
-                  
+
                   <div className="form-actions" style={{ marginTop: '8px' }}>
                     <button className="primary-button" type="submit" style={{ width: '100%' }} disabled={receivePayment.isPending}>Submit Payment</button>
                   </div>
-                  
+
                   {paymentReceipt && (
                     <div className="notice success" style={{ marginTop: '16px' }}>
                       <CheckCircle2 size={16} />
@@ -223,7 +219,7 @@ export default function Billing() {
                   columns={['Date', 'Type', 'Amount', 'Method', 'Course']}
                   rows={(accounts.data?.Transaction || []).map((txn) => [
                     new Date(txn.created_at).toLocaleDateString(),
-                    txn.type === 'PAYMENT' ? <span style={{ color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={14}/> PAYMENT</span> : 'CHARGE',
+                    txn.type === 'PAYMENT' ? <span style={{ color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={14} /> PAYMENT</span> : 'CHARGE',
                     <strong key="amount">{currency.format(txn.amount)}</strong>,
                     txn.payment_method || '-',
                     txn.FeePlan?.Course?.name || '-'
