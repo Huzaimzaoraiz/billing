@@ -13,9 +13,11 @@ import Students from './pages/Students';
 import Billing from './pages/Billing';
 import Expenses from './pages/Expenses';
 
+import fh_logo from './assets/logo.svg';
+
 export default function App() {
   const { getToken } = useAuth();
-  
+
   useEffect(() => {
     setTokenProvider(() => getToken());
   }, [getToken]);
@@ -29,13 +31,13 @@ export default function App() {
         <main className="login-layout">
           <div className="login-brand-panel">
             <div className="login-brand-content">
-              <School size={48} style={{ color: '#991b1b', marginBottom: '24px' }} />
+              <img src={fh_logo} alt="FH-Logo" style={{ height: 80, width: 80, borderRadius: '0px' }} />
               <h1 className="brand-title">{appConfig.name}</h1>
-              <div className="brand-subtitle" style={{ 
-                marginTop: '24px', 
-                textTransform: 'uppercase', 
-                letterSpacing: '0.1em', 
-                fontSize: '13px', 
+              <div className="brand-subtitle" style={{
+                marginTop: '24px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                fontSize: '13px',
                 fontWeight: '600',
                 color: 'rgba(255,255,255,0.5)',
                 lineHeight: '1.8'
@@ -44,16 +46,16 @@ export default function App() {
                 For Coaching Institutes
               </div>
             </div>
-            
-            <div className="login-brand-footer" style={{ 
-                textTransform: 'uppercase', 
-                letterSpacing: '0.1em', 
-                fontSize: '11px', 
-                fontWeight: 'bold',
-                color: 'rgba(255,255,255,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
+
+            <div className="login-brand-footer" style={{
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              color: 'rgba(255,255,255,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
               <div style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%' }}></div>
               System Operational
@@ -61,7 +63,7 @@ export default function App() {
           </div>
           <section className="login-auth-panel">
             <div className="auth-container">
-              <SignIn 
+              <SignIn
                 appearance={{
                   elements: {
                     footerAction: { display: 'none' }
@@ -79,19 +81,19 @@ export default function App() {
 function AuthenticatedApp() {
   const { user: clerkUser } = useUser();
   const [activeView, setActiveView] = useState('dashboard');
-  
+
   const sync = useQuery({
-     queryKey: ['sync'],
-     queryFn: () => api.sync({ email: clerkUser?.primaryEmailAddress?.emailAddress, name: clerkUser?.fullName }),
-     enabled: !!clerkUser,
-     retry: false,
+    queryKey: ['sync'],
+    queryFn: () => api.sync({ email: clerkUser?.primaryEmailAddress?.emailAddress, name: clerkUser?.fullName }),
+    enabled: !!clerkUser,
+    retry: false,
   });
 
-  const session = useQuery({ 
-     queryKey: ['me'], 
-     queryFn: api.me, 
-     retry: false,
-     enabled: sync.isSuccess
+  const session = useQuery({
+    queryKey: ['me'],
+    queryFn: api.me,
+    retry: false,
+    enabled: sync.isSuccess
   });
 
   if (session.isLoading || sync.isLoading) return <div className="screen-message">Opening workspace...</div>;
