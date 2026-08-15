@@ -71,31 +71,20 @@ button {
 }
 
 .login-brand-panel {
-  background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-purple-dark) 100%);
+  background-color: var(--bg-sidebar);
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
   color: var(--text-inverse);
   padding: 48px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
-  overflow: hidden;
-}
-
-.login-brand-panel::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    radial-gradient(circle at top right, rgba(0, 130, 195, 0.4) 0%, transparent 60%),
-    radial-gradient(circle at bottom left, rgba(230, 57, 70, 0.25) 0%, transparent 60%);
-  pointer-events: none;
+  border-right: 1px solid var(--border-subtle);
 }
 
 .login-brand-content {
-  position: relative;
   max-width: 480px;
   margin-top: 15vh;
   animation: panel-enter 600ms ease-out both;
@@ -106,13 +95,11 @@ button {
   height: 72px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px);
-  color: #fff;
+  border-radius: 0px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
   margin-bottom: 32px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 4px 4px 0px #000000;
 }
 
 .brand-title {
@@ -120,26 +107,25 @@ button {
   line-height: 1.1;
   margin: 0 0 16px;
   font-weight: 800;
-  background: linear-gradient(90deg, #ffffff, var(--color-cyan-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #ffffff;
 }
 
 .brand-subtitle {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
   margin: 0;
 }
 
 .login-brand-footer {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .login-auth-panel {
@@ -153,10 +139,8 @@ button {
 .auth-container {
   width: 100%;
   max-width: 420px;
-  background: var(--bg-surface);
-  padding: 40px;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  display: flex;
+  justify-content: center;
   animation: panel-enter 500ms ease-out 150ms both;
 }
 

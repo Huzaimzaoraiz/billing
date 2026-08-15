@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth, useUser, SignIn, SignedIn, SignedOut } from '@clerk/clerk-react';
-import { PiGraduationCapBold as School, PiShieldCheckBold as ShieldCheck } from 'react-icons/pi';
+import { PiFileTextBold as School, PiShieldCheckBold as ShieldCheck } from 'react-icons/pi';
 import { api, setTokenProvider } from './api/client';
 import { appConfig } from './config';
 import Shell from './components/Shell';
@@ -29,23 +29,45 @@ export default function App() {
         <main className="login-layout">
           <div className="login-brand-panel">
             <div className="login-brand-content">
-              <div className="brand-mark-large">
-                <School size={40} />
+              <School size={48} style={{ color: '#991b1b', marginBottom: '24px' }} />
+              <h1 className="brand-title">{appConfig.name}</h1>
+              <div className="brand-subtitle" style={{ 
+                marginTop: '24px', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.1em', 
+                fontSize: '13px', 
+                fontWeight: '600',
+                color: 'rgba(255,255,255,0.5)',
+                lineHeight: '1.8'
+              }}>
+                Enterprise Management System<br />
+                For Coaching Institutes
               </div>
-              <h1 className="brand-title">Welcome to {appConfig.name}</h1>
-              <p className="brand-subtitle">
-                The production-ready, highly secure platform for multi-branch coaching institutes.
-                Manage students, courses, and billing efficiently.
-              </p>
             </div>
-            <div className="login-brand-footer">
-              <ShieldCheck size={20} />
-              <span>Enterprise-grade security powered by Clerk.</span>
+            
+            <div className="login-brand-footer" style={{ 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.1em', 
+                fontSize: '11px', 
+                fontWeight: 'bold',
+                color: 'rgba(255,255,255,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            }}>
+              <div style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%' }}></div>
+              System Operational
             </div>
           </div>
           <section className="login-auth-panel">
             <div className="auth-container">
-              <SignIn />
+              <SignIn 
+                appearance={{
+                  elements: {
+                    footerAction: { display: 'none' }
+                  }
+                }}
+              />
             </div>
           </section>
         </main>
