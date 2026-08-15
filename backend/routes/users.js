@@ -16,6 +16,7 @@ const userBody = z.object({
   email: z.string().trim().email('Enter a valid email'),
   role: z.enum(USER_ROLES).default('STAFF'),
 });
+const idParams = z.object({ id: z.string().uuid() });
 
 router.use(authMiddleware, requireSuperAdmin);
 
@@ -61,6 +62,30 @@ router.post('/', validate({ body: userBody }), asyncHandler(async (req, res) => 
   });
 
   res.status(201).json(user);
+}));
+
+router.delete('/:id', validate({ params: idParams }), asyncHandler(async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+  if (!user) return res.status(404).json({ error: 'user not found' });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: { is_active: false },
+    });
+    await tx.auditLog.create({
+      data: {
+        branch_id: user.branch_id,
+        user_id: req.user.user_id,
+        action: 'USER_DEACTIVATED',
+        entity_type: 'User',
+        entity_id: user.id,
+        details: JSON.stringify({ email: user.email }),
+      }
+    });
+  });
+
+  res.json({ success: true });
 }));
 
 module.exports = router;

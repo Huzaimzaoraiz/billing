@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CircleDollarSign, Plus, CheckCircle2 } from 'lucide-react';
+import { CircleDollarSign, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../api/client';
 import { enrollmentSchema, paymentSchema } from '../schemas';
 import { currency, clean } from '../utils';
@@ -112,6 +112,10 @@ export default function Billing() {
           <div className="billing-column">
             <section className="panel">
               <PanelTitle icon={Plus} title="New Enrollment" />
+              <div className="notice" style={{ backgroundColor: '#fefce8', color: '#854d0e', border: '1px solid #fef08a', marginBottom: '16px' }}>
+                <AlertCircle size={16} />
+                Note: A student can only have one active fee plan per course.
+              </div>
               <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} onSubmit={enrollmentForm.handleSubmit((values) => createEnrollment.mutate(clean(values)))}>
                 <Field label="Course" error={enrollmentForm.formState.errors.course_id?.message}>
                   <select {...enrollmentForm.register('course_id')}>
@@ -120,12 +124,13 @@ export default function Billing() {
                   </select>
                 </Field>
                 <Field label="Admission Fee (One-time)"><input type="number" min="0" {...enrollmentForm.register('one_time_fee')} /></Field>
-                <Field label="Tuition Fee (Monthly)"><input type="number" min="0" {...enrollmentForm.register('tuition_fee')} /></Field>
+                <Field label="Tuition Fee"><input type="number" min="0" {...enrollmentForm.register('tuition_fee')} /></Field>
                 <Field label="Total Discount"><input type="number" min="0" {...enrollmentForm.register('discount')} /></Field>
                 <div className="form-actions">
                   <button className="primary-button" type="submit" disabled={createEnrollment.isPending || !enrollmentForm.watch('course_id')}>Create Enrollment</button>
                 </div>
               </form>
+              {createEnrollment.error && <div className="notice error form-notice">{createEnrollment.error.message}</div>}
             </section>
 
             <section className="panel">
@@ -139,7 +144,7 @@ export default function Billing() {
                       <option value="">Select fee plan</option>
                       {activePlans.map((plan) => (
                         <option key={plan.id} value={plan.id}>
-                          {plan.Course.name} - Bal: {currency.format(plan.balance)} (Monthly: {currency.format(plan.tuition_fee)})
+                          {plan.Course.name} - Bal: {currency.format(plan.balance)} (Tuition: {currency.format(plan.tuition_fee)})
                         </option>
                       ))}
                     </select>
@@ -172,7 +177,7 @@ export default function Billing() {
             <section className="panel">
               <h3>Active Fee Plans</h3>
               <DataTable
-                columns={['Course', 'Monthly Fee', 'Total Due', 'Balance', 'Status']}
+                columns={['Course', 'Tuition Fee', 'Total Due', 'Balance', 'Status']}
                 rows={(accounts.data?.FeePlan || []).map((plan) => [
                   plan.Course.name,
                   currency.format(plan.tuition_fee),

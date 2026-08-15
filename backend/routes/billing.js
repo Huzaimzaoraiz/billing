@@ -112,7 +112,7 @@ router.get('/accounts', validate({ query: accountQuery }), asyncHandler(async (r
   }
   if (req.query.student_id) where.student_id = req.query.student_id;
 
-  const accounts = await prisma.enrollment.findMany({
+  const enrollments = await prisma.enrollment.findMany({
     where,
     include: {
       Student: { select: { id: true, name: true, phone: true, status: true } },
@@ -127,7 +127,35 @@ router.get('/accounts', validate({ query: accountQuery }), asyncHandler(async (r
     orderBy: { created_at: 'desc' }
   });
 
-  res.json(accounts);
+  const feePlans = enrollments.map(acc => {
+    if (!acc.FeePlan) return null;
+    const finalFee = Number(acc.FeePlan.final_fee);
+    const amountPaid = Number(acc.FeePlan.amount_paid);
+    return {
+      ...acc.FeePlan,
+      Course: acc.Course,
+      total_due: finalFee,
+      balance: finalFee - amountPaid,
+      status: acc.status
+    };
+  }).filter(Boolean);
+
+  const transactions = enrollments.flatMap(acc => {
+    if (!acc.FeePlan) return [];
+    
+    const payments = (acc.FeePlan.Payments || []).map(p => ({
+      ...p,
+      type: 'PAYMENT',
+      FeePlan: { Course: acc.Course }
+    }));
+    
+    return payments;
+  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  res.json({
+    FeePlan: feePlans,
+    Transaction: transactions
+  });
 }));
 
 router.post('/enrollments', validate({ body: enrollmentBody }), asyncHandler(async (req, res) => {
@@ -140,6 +168,13 @@ router.post('/enrollments', validate({ body: enrollmentBody }), asyncHandler(asy
   if (req.body.batch_id) {
     const batch = await prisma.batch.findFirst({ where: { id: req.body.batch_id, branch_id: student.branch_id, course_id: course.id } });
     if (!batch) return res.status(404).json({ error: 'batch not found for this course' });
+  }
+
+  const existingEnrollment = await prisma.enrollment.findFirst({
+    where: { student_id: req.body.student_id, course_id: req.body.course_id }
+  });
+  if (existingEnrollment) {
+    return res.status(400).json({ error: 'Student is already enrolled in this course.' });
   }
 
   const account = await prisma.$transaction(async (tx) => {

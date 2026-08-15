@@ -43,6 +43,7 @@ export const api = {
   updateBranch: (id, payload) => request(`/branches/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   users: () => request('/users'),
   createUser: (payload) => request('/users', { method: 'POST', body: JSON.stringify(payload) }),
+  removeUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
   courses: (branchId) => request(`/courses${branchId ? `?branch_id=${encodeURIComponent(branchId)}` : ''}`),
   createCourse: (payload) => request('/courses', { method: 'POST', body: JSON.stringify(payload) }),
   updateCourse: (id, payload) => request(`/courses/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),

@@ -124,6 +124,7 @@ model Enrollment {
   Batch   Batch?   @relation(fields: [batch_id], references: [id])
   FeePlan FeePlan?
 
+  @@unique([student_id, course_id])
   @@map("enrollments")
 }
 

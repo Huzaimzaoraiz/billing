@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UserCog } from 'lucide-react';
+import { UserCog, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { userSchema } from '../schemas';
 import { displayRole } from '../utils';
@@ -25,6 +25,13 @@ export default function Staff() {
       form.reset({ branch_id: '', name: '', email: '', role: 'STAFF' });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
+  });
+
+  const removeUser = useMutation({
+    mutationFn: api.removeUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }
   });
 
   return (
@@ -53,13 +60,28 @@ export default function Staff() {
         {createUser.error && <div className="notice error form-notice">{createUser.error.message}</div>}
       </section>
       <DataTable
-        columns={['Name', 'Email', 'Role', 'Branch', 'Status']}
+        columns={['Name', 'Email', 'Role', 'Branch', 'Status', 'Actions']}
         rows={(users.data || []).map((user) => [
           user.name,
           user.email,
           displayRole(user.role),
           user.Branch ? `${user.Branch.code} · ${user.Branch.name}` : '-',
           <StatusBadge key={user.id} active={user.is_active} />,
+          <div key={`actions-${user.id}`} style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="icon-button"
+              title="Deactivate staff"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to deactivate this staff account?')) {
+                  removeUser.mutate(user.id);
+                }
+              }}
+              disabled={removeUser.isPending || !user.is_active}
+              style={{ color: !user.is_active ? '#94a3b8' : '#ef4444' }}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         ])}
       />
     </section>
