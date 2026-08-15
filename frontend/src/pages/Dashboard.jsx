@@ -38,19 +38,19 @@ export default function Dashboard({ user }) {
         </div>
       )}
 
-      <div className="metrics-grid">
+      <div className="metric-grid">
         <Metric icon={Building2} label="Branches" value={data.totals.branches} />
         <Metric icon={BookOpen} label="Courses" value={data.totals.courses} />
         <Metric icon={Users} label="Total Students" value={data.totals.students} />
         <Metric icon={UserCheck} label="Active Students" value={data.totals.active_students} />
       </div>
-      <div className="metrics-grid" style={{ marginTop: '16px' }}>
+      <div className="metric-grid" style={{ marginTop: '16px' }}>
         <Metric icon={TrendingUp} label="Total Income" value={currency.format(data.totals.total_income)} />
         <Metric icon={TrendingDown} label="Total Expenses" value={currency.format(data.totals.total_expense)} />
         <Metric icon={Wallet} label="Net Profit" value={currency.format(data.totals.net_profit)} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="responsive-grid-2">
         <section className="panel">
           <h3>Income (Last 6 Months)</h3>
           <div className="chart-container">
