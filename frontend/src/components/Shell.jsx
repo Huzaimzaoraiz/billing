@@ -2,7 +2,6 @@ import { useClerk } from '@clerk/clerk-react';
 import { PiSignOutBold as LogOut, PiCompassBold as LayoutDashboard, PiBankBold as Building2, PiBooksBold as BookOpen, PiPenNibBold as UserCog, PiGraduationCapBold as Users, PiScalesBold as ReceiptText, PiFileTextBold, PiUserCircleCheckBold as UserRoundCheck, PiCalculatorBold as Receipt } from 'react-icons/pi';
 import clsx from 'clsx';
 import { appConfig } from '../config';
-import fh_logo from '../assets/logo.svg'
 
 export default function Shell({ user, activeView, onViewChange, children }) {
   const { signOut } = useClerk();
@@ -20,7 +19,6 @@ export default function Shell({ user, activeView, onViewChange, children }) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <img src={fh_logo} alt="FH-Logo" style={{ height: 50, width: 50, borderRadius: '0px', objectFit: 'cover' }} />
           <span>{appConfig.name}</span>
         </div>
         <nav>

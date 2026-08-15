@@ -13,7 +13,6 @@ import Students from './pages/Students';
 import Billing from './pages/Billing';
 import Expenses from './pages/Expenses';
 
-import fh_logo from './assets/logo.svg';
 
 export default function App() {
   const { getToken } = useAuth();
@@ -31,7 +30,6 @@ export default function App() {
         <main className="login-layout">
           <div className="login-brand-panel">
             <div className="login-brand-content">
-              <img src={fh_logo} alt="FH-Logo" style={{ height: 80, width: 80, borderRadius: '0px' }} />
               <h1 className="brand-title">{appConfig.name}</h1>
               <div className="brand-subtitle" style={{
                 marginTop: '24px',
